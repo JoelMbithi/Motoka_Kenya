@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String
+  passwordHash String
+  role         String   @default("USER")
+   image        String?
+  agreeToTerms Boolean
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  businessProfile BusinessProfile?
+}
+
+model BusinessProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName        String
+  businessType        String
+  description         String?
+  kraPin              String
+  logoUrl             String? 
+  coverImageUrl       String?  
+  gallery             String[]
+  registrationNumber  String?
+  yearEstablished     Int?
+  address             String
+  county              String
+  town                String
+  contactPerson       String
+  phone               String
+  email               String   @unique
+  website             String?
+  whatsapp            String?
+  specialties         String[]
+  agreeToVerification Boolean
+  status              String   @default("PENDING") 
+  businessLicensePath String?
+  kraDocumentPath     String?
+  idCopyPath          String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
