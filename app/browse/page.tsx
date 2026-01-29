@@ -58,18 +58,30 @@ export default function BrowsePage() {
     fetchVehicles(initialFilters)
   }, [])
 
-  const fetchVehicles = async (filters: SearchFiltersType = {}) => {
-    try {
-      setLoading(true)
-      const response = await vehicleApi.getAll(filters)
+ const fetchVehicles = async (filters: SearchFiltersType = {}) => {
+  try {
+    setLoading(true)
+    console.log("Fetching vehicles with filters:", filters);
+    
+    const response = await vehicleApi.getAll(filters)
+    console.log("API Response:", response);
+    
+    // Check if response.data is an array
+    if (Array.isArray(response.data)) {
+      console.log("Number of vehicles:", response.data.length);
+      console.log("First vehicle:", response.data[0]);
       setVehicles(response.data)
-    } catch (error) {
-      console.error("Error fetching vehicles:", error)
-    } finally {
-      setLoading(false)
+    } else {
+      console.error("response.data is not an array:", response.data);
+      setVehicles([])
     }
+  } catch (error) {
+    console.error("Error fetching vehicles:", error)
+    setVehicles([])
+  } finally {
+    setLoading(false)
   }
-
+}
   const handleFiltersChange = (filters: SearchFiltersType) => {
     setCurrentFilters(filters)
     fetchVehicles(filters)

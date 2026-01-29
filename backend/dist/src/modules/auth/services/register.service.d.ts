@@ -7,9 +7,9 @@ export declare class RegisterService {
         message: string;
         user: {
             name: string;
+            id: string;
             email: string;
             phone: string;
-            id: string;
             createdAt: Date;
         };
     }>;

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// app/vehicle/[id]/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -18,6 +18,7 @@ import {
   Share2,
   User,
   Mail,
+  Users,
   CheckCircle,
 } from "lucide-react"
 import Image from "next/image"
@@ -27,8 +28,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import TestDriveModal from "@/components/test-drive-modal"
-import FinancingModal from "@/components/financing-modal"
 import { vehicleApi, inspectionApi } from "@/lib/api-client"
 import type { Vehicle, InspectionReport } from "@/lib/types"
 
@@ -42,36 +41,57 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [inspection, setInspection] = useState<InspectionReport | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchVehicleData = async () => {
-      try {
-        const vehicleId = Number.parseInt(params.id)
-
-        // Fetch vehicle details
-        const vehicleResponse = await vehicleApi.getById(vehicleId)
-        setVehicle(vehicleResponse.data)
-
-        // Increment view count
-        await vehicleApi.incrementViews(vehicleId)
-
-        // Fetch inspection report if available
-        try {
-          const inspectionResponse = await inspectionApi.getByVehicle(vehicleId)
-          setInspection(inspectionResponse.data)
-        } catch (error) {
-          // Inspection report might not exist for all vehicles
-          console.log("No inspection report found")
-        }
-      } catch (error) {
-        console.error("Error fetching vehicle data:", error)
-      } finally {
-        setLoading(false)
+useEffect(() => {
+  const fetchVehicleData = async () => {
+    try {
+      const vehicleId = params.id;
+      
+      if (!vehicleId) {
+        setError("Invalid vehicle ID");
+        setLoading(false);
+        return;
       }
+      
+      console.log("Fetching vehicle with ID:", vehicleId);
+      
+      // OPTION 1: Use the updated vehicleApi.getById() with fallback
+      const vehicleResponse = await vehicleApi.getById(vehicleId);
+      const vehicleData = vehicleResponse.data;
+      
+      // OPTION 2: Or use the simpler vehicleDetailApi
+      // const vehicleData = await vehicleDetailApi.getById(vehicleId);
+      
+      if (!vehicleData) {
+        setError("Vehicle not found");
+        setLoading(false);
+        return;
+      }
+      
+      setVehicle(vehicleData);
+      
+      // Fetch inspection (optional - might not exist)
+      try {
+        const inspectionResponse = await inspectionApi.getByVehicle(vehicleId);
+        const inspectionData = inspectionResponse.data;
+        if (inspectionData) {
+          setInspection(inspectionData);
+        }
+      } catch (inspectionError) {
+        console.warn("No inspection found");
+      }
+      
+    } catch (error) {
+      console.error("Error fetching vehicle data:", error);
+      setError("Failed to load vehicle details");
+    } finally {
+      setLoading(false);
     }
+  }
 
-    fetchVehicleData()
-  }, [params.id])
+  fetchVehicleData();
+}, [params.id]);
 
   const formatPrice = (price: number) => {
     return `KES ${price.toLocaleString()}`
@@ -103,15 +123,25 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
     )
   }
 
-  if (!vehicle) {
+  if (error || !vehicle) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-100 max-w-md">
+          <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-6 h-6 text-rose-500" />
+          </div>
           <h1 className="text-xl font-semibold text-slate-900 mb-2">Vehicle Not Found</h1>
-          <p className="text-slate-600 text-sm mb-6">The vehicle you&apos;re looking for doesn&apos;t exist.</p>
-          <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
-            <Link href="/browse">Back to Browse</Link>
-          </Button>
+          <p className="text-slate-600 text-sm mb-6">
+            {error || "The vehicle you're looking for doesn't exist."}
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+              <Link href="/browse">Back to Browse</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="rounded-xl">
+              <Link href="/">Go Home</Link>
+            </Button>
+          </div>
         </div>
       </div>
     )
@@ -159,10 +189,12 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
                   height={400}
                   className="w-full h-80 object-cover rounded-2xl shadow-sm"
                 />
-                <Badge className="absolute top-3 left-3 bg-emerald-600 hover:bg-emerald-600 text-white text-xs px-2 py-1 rounded-lg shadow-sm">
-                  <Shield className="w-3 h-3 mr-1" />
-                  Verified
-                </Badge>
+                {vehicle.verified && (
+                  <Badge className="absolute top-3 left-3 bg-emerald-600 hover:bg-emerald-600 text-white text-xs px-2 py-1 rounded-lg shadow-sm">
+                    <Shield className="w-3 h-3 mr-1" />
+                    Verified
+                  </Badge>
+                )}
                 <div className="absolute bottom-3 right-3 bg-slate-900/70 backdrop-blur-sm text-white px-2 py-1 rounded-lg text-xs">
                   1 / {vehicle.images.length}
                 </div>
@@ -193,10 +225,12 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-semibold text-emerald-600 mb-1">{formatPrice(vehicle.price)}</div>
-                  <div className="flex items-center text-xs text-slate-600">
-                    <Eye className="w-3 h-3 mr-1" />
-                    <span>{vehicle.views} views</span>
-                  </div>
+                  {vehicle.views && (
+                    <div className="flex items-center text-xs text-slate-600">
+                      <Eye className="w-3 h-3 mr-1" />
+                      <span>{vehicle.views} views</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -221,6 +255,11 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
                   <Settings className="w-5 h-5 mx-auto mb-1 text-emerald-600" />
                   <div className="font-medium text-sm">{vehicle.transmission}</div>
                   <div className="text-xs text-slate-600">Transmission</div>
+                </div>
+                  <div className="text-center p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                  <Users className="w-5 h-5 mx-auto mb-1 text-emerald-600" /> {/* Add Users icon */}
+                  <div className="font-medium text-sm">{vehicle.seats || 'N/A'}</div>
+                  <div className="text-xs text-slate-600">Seats</div>
                 </div>
               </div>
 
@@ -257,7 +296,7 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-slate-600">Seats</span>
-                      <span className="font-medium text-slate-900">{vehicle.seats}</span>
+                      <span className="font-medium text-slate-900">{vehicle.seats || 'N/A'}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -341,8 +380,8 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
                             <div className="bg-slate-50 p-4 rounded-xl space-y-3">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="font-medium text-sm text-slate-900">{inspection.inspector?.name}</p>
-                                  <p className="text-xs text-slate-600">{inspection.inspector?.company}</p>
+                                  <p className="font-medium text-sm text-slate-900">{inspection.inspector.name}</p>
+                                  <p className="text-xs text-slate-600">{inspection.inspector.company}</p>
                                 </div>
                                 <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-lg">
                                   <CheckCircle className="w-3 h-3 mr-1" />
@@ -353,26 +392,26 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                                 <div className="flex justify-between">
                                   <span className="text-slate-600">License:</span>
-                                  <span className="font-medium text-slate-900">{inspection.inspector?.license}</span>
+                                  <span className="font-medium text-slate-900">{inspection.inspector.license}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-slate-600">Experience:</span>
-                                  <span className="font-medium text-slate-900">{inspection.inspector?.experience}</span>
+                                  <span className="font-medium text-slate-900">{inspection.inspector.experience}</span>
                                 </div>
                                 <div className="flex items-center">
                                   <Phone className="w-3 h-3 mr-1 text-slate-600" />
-                                  <span>{inspection.inspector?.phone}</span>
+                                  <span>{inspection.inspector.phone}</span>
                                 </div>
                                 <div className="flex items-center">
                                   <Mail className="w-3 h-3 mr-1 text-slate-600" />
-                                  <span>{inspection.inspector?.email}</span>
+                                  <span>{inspection.inspector.email}</span>
                                 </div>
                               </div>
 
                               <div>
                                 <p className="text-xs text-slate-600 mb-2">Certifications:</p>
                                 <div className="flex flex-wrap gap-1">
-                                  {inspection.inspector?.certifications?.map((cert, index) => (
+                                  {inspection.inspector.certifications.map((cert, index) => (
                                     <Badge key={index} variant="outline" className="text-xs px-2 py-0.5 border-slate-200 text-slate-700 rounded-lg">
                                       {cert}
                                     </Badge>
@@ -439,6 +478,8 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
                     WhatsApp
                   </Button>
 
+                  {/* Note: You need to create these modal components */}
+                  {/* 
                   <TestDriveModal vehicle={vehicle}>
                     <Button variant="outline" className="w-full border-slate-200 hover:bg-slate-50 rounded-xl text-xs">
                       Schedule Test Drive
@@ -450,6 +491,7 @@ export default function VehicleDetailPage({ params }: VehicleDetailPageProps) {
                       Request Financing
                     </Button>
                   </FinancingModal>
+                  */}
                 </div>
 
                 <Separator className="my-4 bg-slate-200" />

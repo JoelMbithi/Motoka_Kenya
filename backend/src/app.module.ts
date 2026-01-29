@@ -5,11 +5,13 @@ import { AppService } from './app.service.js';
 import { PrismaService } from './shared/prisma/prisma.service';
 import { AuthModule } from './modules/auth/auth.module'; 
 import { DealersModule } from './modules/dealers/dealers.module';
+import { VehiclesModule } from './modules/vehicles/vehicles.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
     AuthModule,
     DealersModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

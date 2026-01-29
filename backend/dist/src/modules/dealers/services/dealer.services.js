@@ -54,7 +54,7 @@ let DealersService = class DealersService {
             rating: 4.5,
             reviews: 0,
             totalListings: 0,
-            image: dealer.logoUrl || '/api/placeholder/300/200',
+            image: dealer.coverImageUrl || dealer.logoUrl || '/api/placeholder/300/200',
             logoUrl: dealer.logoUrl || null,
             userImage: dealer.user?.image || null,
             coverImage: dealer.coverImageUrl || null,
@@ -76,6 +76,92 @@ let DealersService = class DealersService {
             kraPin: dealer.kraPin,
             userId: dealer.userId,
             user: dealer.user,
+        }));
+    }
+    async getDealerById(id) {
+        const dealer = await this.prisma.businessProfile.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        image: true,
+                        createdAt: true,
+                    },
+                },
+            },
+        });
+        if (!dealer) {
+            return null;
+        }
+        const vehicleCount = await this.prisma.vehicle.count({
+            where: { userId: dealer.userId, status: 'active' },
+        });
+        return {
+            id: dealer.id,
+            name: dealer.businessName,
+            location: `${dealer.town}, ${dealer.county}`,
+            rating: 4.5,
+            reviews: 0,
+            totalListings: vehicleCount,
+            image: dealer.coverImageUrl || dealer.logoUrl || '/api/placeholder/300/200',
+            logoUrl: dealer.logoUrl || null,
+            userImage: dealer.user?.image || null,
+            coverImage: dealer.coverImageUrl || null,
+            gallery: dealer.gallery || [],
+            verified: dealer.status === 'APPROVED',
+            established: dealer.yearEstablished || 2020,
+            description: dealer.description || 'No description available',
+            specialties: dealer.specialties || [],
+            contactPerson: dealer.contactPerson,
+            phone: dealer.phone,
+            email: dealer.email,
+            whatsapp: dealer.whatsapp,
+            website: dealer.website,
+            address: dealer.address,
+            county: dealer.county,
+            town: dealer.town,
+            businessType: dealer.businessType,
+            registrationNumber: dealer.registrationNumber,
+            kraPin: dealer.kraPin,
+            userId: dealer.userId,
+            user: dealer.user,
+            businessLicensePath: dealer.businessLicensePath,
+            kraDocumentPath: dealer.kraDocumentPath,
+            idCopyPath: dealer.idCopyPath,
+        };
+    }
+    async getDealerVehicles(dealerId) {
+        const dealer = await this.prisma.businessProfile.findUnique({
+            where: { id: dealerId },
+        });
+        if (!dealer) {
+            return null;
+        }
+        const vehicles = await this.prisma.vehicle.findMany({
+            where: {
+                userId: dealer.userId,
+                status: 'active'
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+        });
+        return vehicles.map(vehicle => ({
+            id: vehicle.id,
+            title: vehicle.title,
+            price: vehicle.price,
+            images: vehicle.images || [],
+            status: vehicle.status,
+            mileage: vehicle.mileage,
+            fuel: vehicle.fuelType,
+            transmission: vehicle.transmission,
+            bodyType: vehicle.bodyType,
+            year: vehicle.year,
+            make: vehicle.make,
+            model: vehicle.model,
         }));
     }
 };

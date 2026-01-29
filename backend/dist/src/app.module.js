@@ -14,6 +14,7 @@ const app_service_js_1 = require("./app.service.js");
 const prisma_service_1 = require("./shared/prisma/prisma.service");
 const auth_module_1 = require("./modules/auth/auth.module");
 const dealers_module_1 = require("./modules/dealers/dealers.module");
+const vehicles_module_1 = require("./modules/vehicles/vehicles.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -23,6 +24,7 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot(),
             auth_module_1.AuthModule,
             dealers_module_1.DealersModule,
+            vehicles_module_1.VehiclesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_js_1.AppService, prisma_service_1.PrismaService],

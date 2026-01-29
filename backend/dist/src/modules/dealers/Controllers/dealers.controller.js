@@ -28,6 +28,20 @@ let DealersController = class DealersController {
             limit: limit ? parseInt(limit) : 20,
         });
     }
+    async getDealerById(id) {
+        const dealer = await this.dealersService.getDealerById(id);
+        if (!dealer) {
+            throw new common_1.NotFoundException(`Dealer with ID ${id} not found`);
+        }
+        return dealer;
+    }
+    async getDealerVehicles(id) {
+        const vehicles = await this.dealersService.getDealerVehicles(id);
+        if (!vehicles) {
+            throw new common_1.NotFoundException(`Dealer with ID ${id} not found`);
+        }
+        return vehicles;
+    }
 };
 exports.DealersController = DealersController;
 __decorate([
@@ -40,6 +54,20 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], DealersController.prototype, "getDealers", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], DealersController.prototype, "getDealerById", null);
+__decorate([
+    (0, common_1.Get)(':id/vehicles'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], DealersController.prototype, "getDealerVehicles", null);
 exports.DealersController = DealersController = __decorate([
     (0, common_1.Controller)('dealers'),
     __metadata("design:paramtypes", [dealer_services_1.DealersService])

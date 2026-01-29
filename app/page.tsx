@@ -19,22 +19,35 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCounty, setSelectedCounty] = useState("")
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchFeaturedVehicles = async () => {
-      try {
-        const response = await vehicleApi.getFeatured()
-        setFeaturedVehicles(response.data)
-      } catch (error) {
-        console.error("Error fetching featured vehicles:", error)
-      } finally {
-        setLoading(false)
+useEffect(() => {
+  const fetchFeaturedVehicles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get vehicles directly
+      const response = await vehicleApi.getFeatured();
+      
+      // Extract data from axios response
+      setFeaturedVehicles(response.data);
+      
+      if (response.data.length === 0) {
+        setError('No vehicles found in database');
       }
+      
+    } catch (error: any) {
+      console.error('Error:', error);
+      setError('Failed to load vehicles');
+      setFeaturedVehicles([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    fetchFeaturedVehicles()
-  }, [])
-
+  fetchFeaturedVehicles();
+}, []);
   const handleSearch = () => {
     const params = new URLSearchParams()
     if (searchQuery) params.set("search", searchQuery)
@@ -122,7 +135,10 @@ export default function HomePage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button className="h-14 bg-emerald-500 hover:bg-emerald-600 rounded-xl shadow-sm text-lg font-medium" onClick={handleSearch}>
+              <Button 
+                className="h-14 bg-emerald-500 hover:bg-emerald-600 rounded-xl shadow-sm text-lg font-medium" 
+                onClick={handleSearch}
+              >
                 <Search className="w-5 h-5 mr-2" />
                 Search Cars
               </Button>
@@ -204,13 +220,25 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
-          ) : (
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-2xl font-semibold text-slate-700 mb-2">Error Loading Vehicles</h3>
+              <p className="text-slate-500 mb-6">{error}</p>
+              <Button 
+                onClick={() => window.location.reload()}
+                className="bg-emerald-500 hover:bg-emerald-600"
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : featuredVehicles.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {featuredVehicles.map((vehicle) => (
                 <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-slate-200 rounded-2xl group">
                   <div className="relative overflow-hidden">
                     <Image
-                      src={vehicle.images[0] || "/placeholder.svg"}
+                      src={vehicle.images?.[0] || "/placeholder.svg"}
                       alt={vehicle.title}
                       width={400}
                       height={300}
@@ -226,24 +254,26 @@ export default function HomePage() {
                   
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
-                      <h3 className="font-semibold text-xl text-slate-800 line-clamp-2 flex-1 pr-2">{vehicle.title}</h3>
+                      <h3 className="font-semibold text-xl text-slate-800 line-clamp-2 flex-1 pr-2">
+                        {vehicle.title || "Untitled Vehicle"}
+                      </h3>
                       <span className="text-2xl font-bold text-emerald-600 flex-shrink-0">
-                        {formatPrice(vehicle.price)}
+                        {formatPrice(vehicle.price || 0)}
                       </span>
                     </div>
                     
                     <div className="flex items-center text-slate-500 mb-4">
                       <MapPin className="w-5 h-5 mr-2 text-emerald-500" />
-                      <span className="text-lg">{vehicle.location}</span>
+                      <span className="text-lg">{vehicle.location || "Location not specified"}</span>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3 mb-6">
                       <div className="bg-slate-50 rounded-lg p-3 text-center">
-                        <div className="font-semibold text-slate-800">{vehicle.mileage}</div>
+                        <div className="font-semibold text-slate-800">{vehicle.mileage || "N/A"}</div>
                         <div className="text-sm text-slate-500">Mileage</div>
                       </div>
                       <div className="bg-slate-50 rounded-lg p-3 text-center">
-                        <div className="font-semibold text-slate-800">{vehicle.fuel}</div>
+                        <div className="font-semibold text-slate-800">{vehicle.fuel || "N/A"}</div>
                         <div className="text-sm text-slate-500">Fuel Type</div>
                       </div>
                     </div>
@@ -252,20 +282,34 @@ export default function HomePage() {
                       <div className="flex items-center">
                         <div className="flex items-center bg-amber-50 text-amber-700 px-3 py-2 rounded-lg">
                           <Star className="w-4 h-4 text-amber-500 mr-2" />
-                          <span className="font-semibold">{vehicle.dealer.rating}</span>
+                          <span className="font-semibold">{vehicle.dealer?.rating || 4.5}</span>
                         </div>
-                        <span className="text-slate-500 ml-4 truncate">{vehicle.dealer.name}</span>
+                        <span className="text-slate-500 ml-4 truncate">
+                          {vehicle.dealer?.name || "Unknown Dealer"}
+                        </span>
                       </div>
                     </div>
                     
                     <div className="flex gap-3">
-                      <Button size="sm" className="flex-1 bg-emerald-500 hover:bg-emerald-600 rounded-xl h-11" asChild>
+                      <Button 
+                        size="sm" 
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 rounded-xl h-11" 
+                        asChild
+                      >
                         <Link href={`/vehicle/${vehicle.id}`}>View Details</Link>
                       </Button>
-                      <Button size="sm" variant="outline" className="p-0 w-11 h-11 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 rounded-xl">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="p-0 w-11 h-11 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 rounded-xl"
+                      >
                         <Phone className="w-5 h-5 text-emerald-600" />
                       </Button>
-                      <Button size="sm" variant="outline" className="p-0 w-11 h-11 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 rounded-xl">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="p-0 w-11 h-11 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 rounded-xl"
+                      >
                         <MessageCircle className="w-5 h-5 text-emerald-600" />
                       </Button>
                     </div>
@@ -273,7 +317,41 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🚗</div>
+              <h3 className="text-2xl font-semibold text-slate-700 mb-2">No Featured Vehicles Yet</h3>
+              <p className="text-slate-500 mb-6">Check back soon for featured vehicles from our dealers.</p>
+              <Button asChild className="bg-emerald-500 hover:bg-emerald-600">
+                <Link href="/browse">Browse All Vehicles</Link>
+              </Button>
+            </div>
           )}
+        </div>
+      </section>
+
+      {/* Debug Info (Remove in production) */}
+      <section className="py-6 bg-gray-50 border-t">
+        <div className="container mx-auto px-6">
+          <details className="bg-white p-4 rounded-lg border">
+            <summary className="cursor-pointer font-semibold text-sm text-gray-600">
+              Debug Info (Click to expand)
+            </summary>
+            <div className="mt-3 text-sm space-y-2">
+              <p>Vehicles loaded: {featuredVehicles.length}</p>
+              <p>Loading state: {loading ? "true" : "false"}</p>
+              <p>Error: {error || "None"}</p>
+              <button 
+                onClick={() => {
+                  console.log("Featured Vehicles:", featuredVehicles)
+                  console.log("First vehicle:", featuredVehicles[0])
+                }}
+                className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs"
+              >
+                Log to Console
+              </button>
+            </div>
+          </details>
         </div>
       </section>
 

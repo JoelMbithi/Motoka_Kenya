@@ -37,11 +37,65 @@ export declare class DealersService {
         userId: string;
         user: {
             name: string;
+            id: string;
             email: string;
             phone: string;
-            id: string;
             image: string | null;
             createdAt: Date;
         };
     }[]>;
+    getDealerById(id: string): Promise<{
+        id: string;
+        name: string;
+        location: string;
+        rating: number;
+        reviews: number;
+        totalListings: number;
+        image: string;
+        logoUrl: string | null;
+        userImage: string | null;
+        coverImage: string | null;
+        gallery: string[];
+        verified: boolean;
+        established: number;
+        description: string;
+        specialties: string[];
+        contactPerson: string;
+        phone: string;
+        email: string;
+        whatsapp: string | null;
+        website: string | null;
+        address: string;
+        county: string;
+        town: string;
+        businessType: string;
+        registrationNumber: string | null;
+        kraPin: string;
+        userId: string;
+        user: {
+            name: string;
+            id: string;
+            email: string;
+            phone: string;
+            image: string | null;
+            createdAt: Date;
+        };
+        businessLicensePath: string | null;
+        kraDocumentPath: string | null;
+        idCopyPath: string | null;
+    } | null>;
+    getDealerVehicles(dealerId: string): Promise<{
+        id: string;
+        title: string;
+        price: number;
+        images: string[];
+        status: string;
+        mileage: string;
+        fuel: string;
+        transmission: string;
+        bodyType: string;
+        year: number;
+        make: string;
+        model: string;
+    }[] | null>;
 }

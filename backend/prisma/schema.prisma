@@ -15,6 +15,7 @@ model User {
   passwordHash String
   role         String   @default("USER")
    image        String?
+     vehicles        Vehicle[]
   agreeToTerms Boolean
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -51,4 +52,43 @@ model BusinessProfile {
   idCopyPath          String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+
+model Vehicle {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  price       Int
+  description String?
+  images      String[]
+  
+  make        String
+  model       String
+  year        Int
+   seats       Int? 
+  mileage     String
+  fuelType    String   // petrol, diesel, electric, hybrid
+  transmission String  // manual, automatic
+  bodyType    String   // sedan, SUV, hatchback, etc.
+  color       String?
+  condition   String   // new, used
+  
+  status      String   @default("active") // active, sold, pending
+  
+  location    String?  // For search/filtering
+  county      String?
+  town        String?
+  
+  // Additional features
+  features    String[] // air conditioning, sunroof, etc.
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([county])
 }
